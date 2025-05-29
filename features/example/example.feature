@@ -21,4 +21,5 @@ Scenario: Add a website to favorites using keyboard shortcut
     When I navigate to "https://www.bing.com"
     And I press "Ctrl+D" on my keyboard
     And I click the "Done" button in the favorites dialog
+    When I open favorites bar
     Then "Bing" should appear in my favorites list
