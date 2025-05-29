@@ -4,7 +4,6 @@ Feature: Microsoft Edge Examples
  Scenario: Search in Bing
     Given Edge is launched
     When I navigate to "https://www.bing.com"
-    And I wait until the search box is visible
     And I enter "Microsoft Edge" in the search box
     And I press "Enter" on my keyboard
     Then search results containing "Microsoft Edge" should be displayed
