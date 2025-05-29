@@ -191,5 +191,5 @@ def before_scenario(context, scenario):
 
 def after_scenario(context, scenario):
     context.scenario = scenario
-    # result = call_tool_sync(context, context.session.call_tool(name="browser_close", arguments={"caller": "behave-automation", 'need_snapshot': 0}))
+    result = call_tool_sync(context, context.session.call_tool(name="browser_close", arguments={"caller": "behave-automation", 'need_snapshot': 0}))
     pass
