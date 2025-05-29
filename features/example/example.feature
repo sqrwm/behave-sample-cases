@@ -17,6 +17,7 @@ Scenario: Download PDF file
     Then "sample-1.pdf" should appear in download list
     
 Scenario: Add a website to favorites using keyboard shortcut
+    Given Edge is launched
     When I navigate to "https://www.bing.com"
     And I press "Ctrl+D" on my keyboard
     And I click the "Done" button in the favorites dialog
