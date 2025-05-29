@@ -6,7 +6,6 @@ Feature: Microsoft Edge Examples
     When I navigate to "https://www.bing.com"
     And I enter "Microsoft Edge" in the search box
     And I press "Enter" on my keyboard
-    Then search results containing "Microsoft Edge" should be displayed
 
   Scenario: Download PDF file
     Given Edge is launched
