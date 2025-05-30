@@ -10,57 +10,10 @@ import logging
 
 session_ready = threading.Event()
 
-# def before_all(context):
-#     context._task_queue = asyncio.Queue()
-#     context._result_queue = asyncio.Queue()
-
-#     def run_loop():
-#         loop = asyncio.new_event_loop()
-#         asyncio.set_event_loop(loop)
-
-#         async def mcp_worker():
-#             try:
-#                 async with sse_client("http://localhost:8000/sse") as streams:
-#                     async with ClientSession(*streams) as session:
-#                         await session.initialize()
-#                         context.session = session
-#                         session_ready.set()
-
-#                         while True:
-#                             task = await context._task_queue.get()
-#                             if task is None:
-#                                 break
-#                             start = time.time()
-#                             time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start))
-#                             print(f"{time_str} _task_queue.get done")
-    
-#                             coro = task
-#                             result = await coro
-#                             start = time.time()
-#                             time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start))
-#                             print(f"{time_str} await coro end")
-    
-#                             await context._result_queue.put(result)
-#                             start = time.time()
-#                             time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start))
-#                             print(f"{time_str} _result_queue.put end")
-
-#             except Exception as e:
-#                 print(f"MCP 初始化失败: {e}")
-#                 session_ready.set()
-
-#         loop.run_until_complete(mcp_worker())
-
-#     thread = threading.Thread(target=run_loop, daemon=True)
-#     thread.start()
-
-#     session_ready.wait()
-
 
 def before_all(context):
     import threading
 
-    # 创建线程安全的 janus queue
     context._task_queue = janus.Queue()
     context._result_queue = janus.Queue()
 
@@ -84,18 +37,12 @@ def before_all(context):
                                 break
 
                             start = time.time()
-                            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start)), "_task_queue.get done")
-
                             coro = task
                             result = await coro
-
-                            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), "await coro end")
-
                             await context._result_queue.async_q.put(result)
-                            print(time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time())), "_result_queue.put end")
 
             except Exception as e:
-                print(f"MCP 初始化失败: {e}")
+                print(f"MCP init failed: {repr(e)}")
                 session_ready.set()
 
         loop.run_until_complete(mcp_worker())
@@ -106,64 +53,22 @@ def before_all(context):
     session_ready.wait()
 
 
-
-# def after_all(context):
-#     if hasattr(context, "_task_queue"):
-#         asyncio.run(context._task_queue.put(None))
-
-
-
 def after_all(context):
-    # 发送退出信号，mcp_worker 会在接收到 None 后自动退出并关闭队列
     if hasattr(context, "_task_queue"):
         context._task_queue.sync_q.put_nowait(None)
-
-    # 如果你希望确保主线程等到后台线程完全退出，可以设置 thread.join()，但不是必须的
-
-
-
-
-
-
-# def call_tool_sync(context, coro, timeout=40):
-#     start = time.time()
-#     time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start))
-#     print(f"\n\n{time_str} call_tool_sync start: coro={coro}")
-    
-#     context._task_queue.put_nowait(coro)
-#     start = time.time()
-#     time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(start))
-#     print(f"{time_str} _task_queue.put_nowait done")
-#     while True:
-#         try:
-#             result = context._result_queue.get_nowait()
-#             time_str = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(time.time()))
-#             print(f"{time_str} call_tool_sync _result_queue.get_nowait: cost={int(time.time()-start)}, result={result}\n\n")
-#             return result
-#         except asyncio.QueueEmpty:
-#             if time.time() - start > timeout:
-#                 raise TimeoutError("MCP tool invocation timed out.")
-#             time.sleep(0.1)
 
 
 def call_tool_sync(context, coro, timeout=40):
     start = time.time()
-    print(f"\n\n{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start))}  call_tool_sync start: coro={coro}")
-
     context._task_queue.sync_q.put(coro)
-    print(f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}  _task_queue.sync_q.put done")
-
     while True:
         try:
             result = context._result_queue.sync_q.get_nowait()
-            print(f"{time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())}  call_tool_sync _result_queue.get_nowait: cost={int(time.time()-start)}, result={result}\n\n")
             return result
         except queue.Empty:
             if time.time() - start > timeout:
                 raise TimeoutError("MCP tool invocation timed out.")
             time.sleep(0.1)
-
-
 
 
 def get_tool_json(result):
@@ -191,5 +96,14 @@ def before_scenario(context, scenario):
 
 def after_scenario(context, scenario):
     context.scenario = scenario
-    result = call_tool_sync(context, context.session.call_tool(name="browser_close", arguments={"caller": "behave-automation", 'need_snapshot': 0}))
+    call_tool_sync(context, context.session.call_tool(name="browser_close", arguments={"caller": "behave-automation", 'need_snapshot': 0}))
     pass
+
+    
+# def before_step(context, step):
+#     print(f"\n{step} s: {int(time.time())}")
+   
+
+# def after_step(context, step):
+#     print(f"{step} e: {int(time.time())}\n")
+    
