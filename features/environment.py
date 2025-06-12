@@ -3,29 +3,65 @@ import time
 import threading
 import asyncio
 import janus
+import pathlib
 import queue
 from mcp.client.session import ClientSession
+from mcp.client.stdio import stdio_client, StdioServerParameters
 from mcp.client.sse import sse_client
 import logging
+
 
 session_ready = threading.Event()
 
 
+def load_mcp_config():
+    current_dir = pathlib.Path(__file__).parent.parent
+    mcp_config_path = current_dir / ".vscode" / "mcp.json"
+    
+    if not mcp_config_path.exists():
+        raise FileNotFoundError(f"MCP config file not found: {mcp_config_path}")
+    
+    with open(mcp_config_path, 'r', encoding='utf-8') as f:
+        config = json.load(f)
+    
+    # Find server configuration starting with bdd-auto-mcp
+    servers = config.get("servers", {})
+    for server_name, server_config in servers.items():
+        if server_name.startswith("bdd-auto-mcp"):
+            command = server_config.get("command")
+            args = server_config.get("args", [])
+            print(f"Found MCP server configuration: command={command}")
+            print(f"Found MCP server configuration: args={args}")
+            return command, args
+    
+    raise ValueError("No bdd-auto-mcp server configuration found in mcp.json")
+
+
 def before_all(context):
     import threading
-
     context._task_queue = janus.Queue()
     context._result_queue = janus.Queue()
-
     session_ready = threading.Event()
 
     def run_loop():
         loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-
+        asyncio.set_event_loop(loop)        
+        
         async def mcp_worker():
             try:
-                async with sse_client("http://localhost:8000/sse") as streams:
+                # Load configuration from mcp.json
+                command, args = load_mcp_config()
+                print(f"Loading MCP server with command: {command}")
+                print(f"Args: {args}")
+                
+                # Define MCP server parameters
+                server_params = StdioServerParameters(
+                    command=command,
+                    args=args
+                )
+                
+                # Connect to server using stdio_client
+                async with stdio_client(server_params) as streams:
                     async with ClientSession(*streams) as session:
                         await session.initialize()
                         context.session = session
@@ -36,10 +72,25 @@ def before_all(context):
                             if task is None:
                                 break
 
-                            start = time.time()
                             coro = task
                             result = await coro
                             await context._result_queue.async_q.put(result)
+
+                # async with sse_client("http://localhost:8000/sse") as streams:
+                #     async with ClientSession(*streams) as session:
+                #         await session.initialize()
+                #         context.session = session
+                #         session_ready.set()
+
+                #         while True:
+                #             task = await context._task_queue.async_q.get()
+                #             if task is None:
+                #                 break
+
+                #             start = time.time()
+                #             coro = task
+                #             result = await coro
+                #             await context._result_queue.async_q.put(result)
 
             except Exception as e:
                 print(f"MCP init failed: {repr(e)}")
