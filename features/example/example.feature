@@ -22,3 +22,10 @@ Feature: Microsoft Edge Examples
     When I open favorites pane
     And open Favorites bar
     Then "Bing" should appear in my favorites list
+
+  Scenario: serch in bing
+    Given I launch Edge
+    When I navigate to "https://www.bing.com"
+    And I input "mcp server" in search box
+    And I press enter
+    Then analyze the search result screenshot is MCP related
