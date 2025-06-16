@@ -2,7 +2,7 @@ Feature: Microsoft Edge Examples
   As a Microsoft Edge user
 
   # Note: Vertical tabs are currently not supported.
-  # Known issue: [Bug 57975310: win-auto-mcp not support vertical tab](https://microsoft.visualstudio.com/Edge/_workitems/edit/57975310)
+  # Known issue: [Bug 57975310: win-auto-mcp not support vertical tab](***)
   # This issue is under investigation and will be addressed in an upcoming release.
 
   Scenario: Add a website to favorites using keyboard shortcut
