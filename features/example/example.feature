@@ -22,5 +22,5 @@ Feature: Microsoft Edge Examples
     When I navigate to "https://getsamplefiles.com/download/pdf/sample-1.pdf"
     Then the Downloads pane should appear
     When I navigate to "edge://downloads"
-    Then "sample-1.pdf" should appear in download list # There is a bug in the download feature, so this step may fail.
+    Then "sample-1.pdf" should appear in download list # There is a bug 57974879 in the download feature, so this step may fail.
     
